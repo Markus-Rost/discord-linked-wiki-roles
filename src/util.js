@@ -7,8 +7,8 @@ import DiscordOauth2 from 'discord-oauth2';
 const require = createRequire(import.meta.url);
 /** @type {{[id: String]: {id: String, secret: String, key: CryptoKey, site: String, name: String, wiki: String, wiki_client: String, wiki_secret: String}}} */
 export const SETTINGS = require('../bots.json');
-for (const setting of SETTINGS) {
-	setting.key = await subtle.importKey('raw', Buffer.from(setting.key, 'hex'), 'Ed25519', true, ['verify']).catch(console.log);
+for (let site in SETTINGS) {
+	SETTINGS[site].key = await subtle.importKey('raw', Buffer.from(SETTINGS[site].key, 'hex'), 'Ed25519', true, ['verify']).catch(console.log);
 }
 
 globalThis.isDebug = ( process.argv[2] === 'debug' );
