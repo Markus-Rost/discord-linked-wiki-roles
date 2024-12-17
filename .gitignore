@@ -1,0 +1,9 @@
+node_modules/
+*.env
+bots*.json
+*.db
+*.sql
+*.log
+*.code-workspace
+*.bat
+error.js

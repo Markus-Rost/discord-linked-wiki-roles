@@ -1,0 +1,11 @@
+{
+	"miraheze": {
+		"id": "Client ID for Discord application",
+		"secret": "Client secret for Discord application",
+		"site": "miraheze",
+		"name": "Miraheze",
+		"wiki": "https://meta.miraheze.org/w/",
+		"wiki_client": "Client ID for Miraheze OAuth2 consumer",
+		"wiki_secret": "Client secret for Miraheze OAuth2 consumer"
+	}
+}
