@@ -2,6 +2,7 @@
 	"miraheze": {
 		"id": "Client ID for Discord application",
 		"secret": "Client secret for Discord application",
+		"key": "Public key for Discord application",
 		"site": "miraheze",
 		"name": "Miraheze",
 		"wiki": "https://meta.miraheze.org/w/",

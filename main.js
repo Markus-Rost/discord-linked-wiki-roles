@@ -1,12 +1,70 @@
 import 'dotenv/config';
 import { createServer, STATUS_CODES } from 'node:http';
-import { randomBytes } from 'node:crypto';
-import { SETTINGS, oauth, db, got, updateMetadata } from './src/util.js';
+import { subtle, randomBytes } from 'node:crypto';
+import { SETTINGS, oauth, db, got, interactionCreate, updateMetadata } from './src/util.js';
 
 /** @type {Map<String, {site: String, user: String, access_token: String, refresh_token: String}>} */
 const tokenCache = new Map();
 
 const server = createServer( (req, res) => {
+	var reqURL = new URL(req.url, process.env.redirect_uri);
+
+	if ( req.method === 'POST' ) {
+		const signature = req.headers['x-signature-ed25519'];
+		const timestamp = req.headers['x-signature-timestamp'];
+		if ( !signature || !timestamp || !reqURL.pathname.startsWith('/linked_role/') ) {
+			res.statusCode = 401;
+			return res.end();
+		}
+		let parts = reqURL.pathname.replace('/linked_role/', '').split('/');
+		if ( parts.length !== 1 || !SETTINGS.hasOwnProperty(parts[0]) ) {
+			res.statusCode = 401;
+			return res.end();
+		}
+		const setting = SETTINGS[parts[0]];
+		if ( !setting.key || typeof setting.key === 'string' ) {
+			res.statusCode = 401;
+			return res.end();
+		}
+
+		let body = [];
+		req.on( 'data', chunk => {
+			body.push(chunk);
+		} );
+		req.on( 'error', () => {
+			console.log( error );
+			res.end('error');
+		} );
+		return req.on( 'end', async () => {
+			const rawBody = Buffer.concat(body).toString();
+			try {
+				if ( !await subtle.verify('Ed25519', setting.key, Buffer.from(signature, 'hex'), Buffer.from(timestamp + rawBody)) ) {
+					res.statusCode = 401;
+					return res.end();
+				}
+			}
+			catch ( verifyerror ) {
+				console.log( verifyerror );
+				res.statusCode = 401;
+				return res.end();
+			}
+			try {
+				let response = JSON.stringify( await interactionCreate( JSON.parse(rawBody), site ) );
+				res.writeHead(200, {
+					'Content-Length': Buffer.byteLength(response),
+					'Content-Type': 'application/json'
+				});
+				res.write( response );
+				res.end();
+			}
+			catch ( jsonerror ) {
+				console.log( jsonerror );
+				res.statusCode = 500;
+				return res.end();
+			}
+		} );
+	}
+
 	res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 	res.setHeader('Content-Type', 'text/html');
 	res.setHeader('Content-Language', ['en']);
@@ -20,8 +78,6 @@ const server = createServer( (req, res) => {
 		return res.end();
 	}
 
-	var reqURL = new URL(req.url, process.env.redirect_uri);
-
 	if ( reqURL.pathname === '/linked_role' ) {
 		if ( !reqURL.searchParams.get('code') || !reqURL.searchParams.get('state') ) {
 			res.writeHead(302, {Location: '/'});
@@ -32,8 +88,8 @@ const server = createServer( (req, res) => {
 			res.writeHead(302, {Location: '/'});
 			return res.end();
 		}
-		let tokens = tokenCache.get(state);
-		let setting = SETTINGS[tokens.site];
+		const tokens = tokenCache.get(state);
+		const setting = SETTINGS[tokens.site];
 		return got.post( `${setting.wiki}rest.php/oauth2/access_token`, {
 			form: {
 				grant_type: 'authorization_code',
@@ -101,7 +157,7 @@ const server = createServer( (req, res) => {
 		res.writeHead(302, {Location: '/'});
 		return res.end();
 	}
-	let setting = SETTINGS[parts[0]];
+	const setting = SETTINGS[parts[0]];
 	if ( !reqURL.searchParams.get('code') ) {
 		let oauthURL = oauth.generateAuthUrl({
 			responseType: 'code',
@@ -168,6 +224,7 @@ server.listen( process.env.server_port, process.env.server_hostname, () => {
 } );
 
 process.on( 'warning', warning => {
+	if ( warning?.name === 'ExperimentalWarning' ) return;
 	console.log(`- Warning: ${warning}`);
 } );
 
