@@ -49,7 +49,7 @@ const server = createServer( (req, res) => {
 				return res.end();
 			}
 			try {
-				let response = JSON.stringify( await interactionCreate( JSON.parse(rawBody), site ) );
+				let response = JSON.stringify( await interactionCreate( JSON.parse(rawBody), setting.site ) );
 				res.writeHead(200, {
 					'Content-Length': Buffer.byteLength(response),
 					'Content-Type': 'application/json'
