@@ -1,12 +1,12 @@
-import { createRequire } from 'node:module';
 import { subtle } from 'node:crypto';
 import gotDefault from 'got';
 import { gotSsrf } from 'got-ssrf';
 import pg from 'pg';
 import DiscordOauth2 from 'discord-oauth2';
-const require = createRequire(import.meta.url);
+import botSettings from '../bots.json' with { type: 'json' };
+
 /** @type {{[id: String]: {id: String, secret: String, key: CryptoKey, site: String, name: String, wiki: String, wiki_client: String, wiki_secret: String}}} */
-export const SETTINGS = require('../bots.json');
+export const SETTINGS = botSettings;
 for (let site in SETTINGS) {
 	SETTINGS[site].key = await subtle.importKey('raw', Buffer.from(SETTINGS[site].key, 'hex'), 'Ed25519', true, ['verify']).catch(console.log);
 }
@@ -17,12 +17,12 @@ export const oauth = new DiscordOauth2();
 
 /*
 CREATE TABLE linkedrole (
-    discord  TEXT    NOT NULL,
-    userid   INTEGER NOT NULL,
-    username TEXT    NOT NULL,
-    site     TEXT    NOT NULL,
-    access   TEXT    NOT NULL,
-    refresh  TEXT    NOT NULL,
+    discord  TEXT NOT NULL,
+    userid   TEXT NOT NULL,
+    username TEXT NOT NULL,
+    site     TEXT NOT NULL,
+    access   TEXT NOT NULL,
+    refresh  TEXT NOT NULL,
     UNIQUE (
         discord,
         site
@@ -70,7 +70,7 @@ export async function interactionCreate(interaction, site) {
 					}
 					else result.data.content = 'No connection exists yet!';
 					break;/*
-					got.post( `https://discord.com/api/v10/users/@me/applications/${id}/commands`, {
+					got.post( `https://discord.com/api/v10/applications/${id}/commands`, {
 						json: {type:1,name:'update',description:'Update your connection data'},
 						headers: {
 							Authorization: `Bot ${token}`

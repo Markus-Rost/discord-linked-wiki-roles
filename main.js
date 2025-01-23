@@ -111,7 +111,7 @@ const server = createServer( (req, res) => {
 					Authorization: `Bearer ${body.access_token}`
 				}
 			} ).then( uresponse => {
-				/** @type {{sub: Number, username: String}} */
+				/** @type {{sub: String, username: String}} */
 				var user = uresponse.body;
 				if ( uresponse.statusCode !== 200 || !user?.sub || !user?.username ) {
 					console.log( `- ${uresponse.statusCode}: Error while getting the mediawiki profile on ${setting.wiki}: ${user?.message||user?.error}` );
